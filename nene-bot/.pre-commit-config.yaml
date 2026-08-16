@@ -1,0 +1,36 @@
+repos:
+  # Generic repository checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.3
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: alembic-single-head
+        name: Alembic single head
+        entry: uv run python scripts/check_alembic_heads.py
+        language: system
+        pass_filenames: false
+        files: ^nene-bot/db/alembic/versions/
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run --directory nene-bot mypy .
+        language: system
+        types: [python]
+        pass_filenames: false

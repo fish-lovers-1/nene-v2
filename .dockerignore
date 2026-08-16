@@ -1,0 +1,7 @@
+.git
+nene-bot/.env
+nene-bot/.env.*
+nene-bot/tests
+**/__pycache__
+*.pyc
+README.md

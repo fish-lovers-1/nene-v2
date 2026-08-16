@@ -1,0 +1,42 @@
+[project]
+name = "nene-v2"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.19.1",
+    "asyncpg>=0.31.0",
+    "discord-py>=2.7.1",
+    "python-dotenv>=1.2.2",
+    "sqlalchemy>=2.0.52",
+]
+
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.22.1",
+    "mypy>=2.3.0",
+    "pre-commit>=4.6.2",
+    "psycopg>=3.3.4",
+    "pytest-asyncio>=1.4.0",
+    "pytest-mock>=3.15.1",
+    "ruff>=0.16.3",
+    "sqlalchemy-diff>=1.1.1",
+    "testcontainers[postgresql]>=4.15.0",
+]
+
+[tool.ruff.lint]
+ignore = [
+    "N999","B008"
+]
+
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.mypy]
+exclude = ["^tests/"]
+
+[[tool.mypy.overrides]]
+module = "sqlalchemydiff.*"
+ignore_missing_imports = true
