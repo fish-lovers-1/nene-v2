@@ -6,7 +6,6 @@ on:
 jobs:
   pre-commit:
     runs-on: ci
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,4 +26,10 @@ jobs:
         run: uv run pre-commit run --all-files
 
   test:
+    runs-on: ci
     uses: ./.gitea/workflows/test.yml
+
+  good-to-merge:
+    runs-on: ci
+    steps:
+    - run: true
