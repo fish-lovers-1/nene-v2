@@ -41,10 +41,13 @@ jobs:
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GUILD_ID: ${{ secrets.GUILD_ID }}
+
         run: |
           cat > .env <<EOF
           DISCORD_TOKEN=$DISCORD_TOKEN
           DATABASE_URL=$DATABASE_URL
+          GUILD_ID=$GUILD_ID
           EOF
 
       - name: Deploy
