@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -26,5 +29,7 @@ class Database:
     async def close(self) -> None:
         await self.engine.dispose()
 
-    def session(self) -> AsyncSession:
-        return self.session_factory()
+    @asynccontextmanager
+    async def session(self) -> AsyncIterator[AsyncSession]:
+        async with self.session_factory.begin() as session:
+            yield session

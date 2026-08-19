@@ -8,6 +8,7 @@ dependencies = [
     "alembic>=1.19.1",
     "asyncpg>=0.31.0",
     "discord-py>=2.7.1",
+    "dpytest>=0.7.0",
     "python-dotenv>=1.2.2",
     "sqlalchemy>=2.0.52",
 ]
@@ -15,6 +16,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "aiosqlite>=0.22.1",
+    "freezegun>=1.5.5",
     "mypy>=2.3.0",
     "pre-commit>=4.6.2",
     "psycopg>=3.3.4",
@@ -27,7 +29,7 @@ dev = [
 
 [tool.ruff.lint]
 ignore = [
-    "N999","B008"
+    "N999","B008", "DTZ001"
 ]
 
 
