@@ -30,6 +30,10 @@ jobs:
     uses: ./.gitea/workflows/test.yml
 
   good-to-merge:
+    needs:
+      - pre-commit
+      - test
+
     runs-on: ci
     steps:
     - run: true
