@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import discord
 import pytest
 
-from argparsers.DateTimeTransformer import SYDNEY_TZ, DateTimeTransformer
+from argparsers.DateTimeTransformer import DateTimeTransformer
 
 
 @pytest.mark.parametrize(
@@ -12,11 +12,11 @@ from argparsers.DateTimeTransformer import SYDNEY_TZ, DateTimeTransformer
     [
         (
             "03-03-2026",
-            datetime(2026, 3, 3, tzinfo=SYDNEY_TZ),
+            datetime(2026, 3, 3),
         ),
         (
             "03-03-2026 14:30",
-            datetime(2026, 3, 3, 14, 30, tzinfo=SYDNEY_TZ),
+            datetime(2026, 3, 3, 14, 30),
         ),
     ],
 )
