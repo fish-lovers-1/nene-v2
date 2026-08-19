@@ -29,7 +29,7 @@ dev = [
 
 [tool.ruff.lint]
 ignore = [
-    "N999","B008", "DTZ001", "DTZ007"
+    "N999","B008", "DTZ001"
 ]
 
 

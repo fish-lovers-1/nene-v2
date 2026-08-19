@@ -5,6 +5,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 
 from db.Base import BaseModel
+from db.utils import Timestamp
 
 
 class Lore(BaseModel):
@@ -14,7 +15,7 @@ class Lore(BaseModel):
     adder_dicord_ref: Mapped[str]
     target_user_discord_ref: Mapped[str]
     content: Mapped[str]
-    optional_timestamp: Mapped[datetime.datetime | None]
+    optional_timestamp: Mapped[Timestamp | None]
 
     def __init__(
         self,
