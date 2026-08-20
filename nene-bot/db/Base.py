@@ -12,13 +12,13 @@ class BaseModel(Base):
     __abstract__ = True
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        DateTime(timezone=False),
         server_default=text("CURRENT_TIMESTAMP"),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        DateTime(timezone=False),
         server_default=text("CURRENT_TIMESTAMP"),
         onupdate=func.now(),
         nullable=False,
