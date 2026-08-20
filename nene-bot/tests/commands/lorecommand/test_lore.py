@@ -6,7 +6,6 @@ import pytest
 from freezegun import freeze_time
 from sqlalchemy import select
 
-from argparsers.DateTimeTransformer import SYDNEY_TZ
 from commands.LoreCommand import LoreCommand
 from db.Database import Database
 from db.models.Lore import Lore
@@ -70,7 +69,7 @@ async def test_lore_add_with_timestamp(test_nene: Nene):
         interaction,
         member=member,  # ty: ignore[parameter-already-assigned]
         lore="Nene is cute today too",
-        timestamp=datetime(2026, 3, 3, tzinfo=SYDNEY_TZ),
+        timestamp=datetime(2026, 3, 3),
     )
 
     async with db.session() as session:
