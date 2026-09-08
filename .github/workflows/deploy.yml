@@ -7,13 +7,12 @@ on:
 
 jobs:
   test:
-    runs-on: ci
-    uses: ./.gitea/workflows/test.yml
+    uses: ./.github/workflows/test.yml
 
 
   deploy:
     needs: test
-    runs-on: deploy
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout

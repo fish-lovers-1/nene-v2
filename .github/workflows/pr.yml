@@ -5,7 +5,7 @@ on:
 
 jobs:
   pre-commit:
-    runs-on: ci
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -27,4 +27,4 @@ jobs:
         run: uv run pre-commit run --all-files
 
   test:
-    uses: ./.gitea/workflows/test.yml
+    uses: ./.github/workflows/test.yml
