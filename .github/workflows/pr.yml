@@ -36,4 +36,4 @@ jobs:
       - test
 
     steps:
-      - run: echo "Can merge now"
+      - run: echo "Can merge now :)"
