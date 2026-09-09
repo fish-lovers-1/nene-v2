@@ -1,7 +1,11 @@
 .git
 nene-bot/.env
 nene-bot/.env.*
-nene-bot/tests
-**/__pycache__
+nene-bot/tests/
+**/__pycache__/
 *.pyc
 README.md
+nene-bot/.venv/
+nene-bot/dist/
+nene-bot/build/
+nene-bot/*.egg-info/
