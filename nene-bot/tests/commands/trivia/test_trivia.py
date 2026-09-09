@@ -81,9 +81,9 @@ async def ask_question(
             await while_waiting(view)
 
     with (
-        patch("commands.Trivia.aiohttp.ClientSession", return_value=session),
+        patch("commands.trivia.aiohttp.ClientSession", return_value=session),
         patch(
-            "commands.Trivia.asyncio.sleep",
+            "commands.trivia.asyncio.sleep",
             new=AsyncMock(side_effect=mock_sleep),
         ) as sleep,
     ):
