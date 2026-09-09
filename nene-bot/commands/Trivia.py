@@ -56,8 +56,16 @@ class Trivia(commands.Cog):
         answers = [correct_answer] + incorrect_answers
         random.shuffle(answers)
 
-        message = f"Question: {question}\n\t{'\n\t'.join([f"{i + 1}. {answer}" for i, answer in enumerate(answers)])}"
+        answer_markers = ["🍎", "🍑", "🍇", "🍉"]
+        answer_list = "\n".join(
+            f"{marker}  {answer}" for marker, answer in zip(answer_markers, answers, strict=True)
+        )
+        message = f"## {question}\n```\n{answer_list}\n```"
         await interaction.response.send_message(message)
+        trivia_message = await interaction.original_response()
+        for marker in answer_markers:
+            await trivia_message.add_reaction(marker)
+
         await asyncio.sleep(15)
         await interaction.followup.send(
             f"The correct answer was: {correct_answer}"
