@@ -104,10 +104,12 @@ class Trivia(commands.Cog):
         description="Ask a trivia question"
     )
     @app_commands.describe(difficulty="Choose a question difficulty")
+    @app_commands.describe(time="Choose the question time limit in seconds")
     async def ask(
         self,
         interaction: discord.Interaction,
         difficulty: Literal["any", "easy", "medium", "hard"] = "any",
+        time: int = 15
     ):
         # See here for api details: https://opentdb.com/api_config.php
         # First fetch a potential question
@@ -151,7 +153,7 @@ class Trivia(commands.Cog):
         await interaction.response.send_message(message, view=view)
 
         # Wait before revealing the answer
-        await asyncio.sleep(15)
+        await asyncio.sleep(time)
         view.reveal_answer()
         await interaction.edit_original_response(view=view)
         await interaction.followup.send(view.get_results_message())
