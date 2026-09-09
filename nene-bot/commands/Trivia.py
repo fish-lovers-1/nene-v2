@@ -7,6 +7,30 @@ import html
 import aiohttp
 import asyncio
 
+PRODUCE_MARKERS = [
+    "🍇", "🍈", "🍉", "🍊", "🍋", "🍌", "🍍", "🥭", "🍎", "🍏",
+    "🍐", "🍑", "🍒", "🍓", "🫐", "🥝", "🍅", "🫒", "🥥", "🥑",
+    "🍆", "🥔", "🥕", "🌽", "🌶️", "🫑", "🥒", "🥬", "🥦", "🧄",
+    "🧅", "🥜", "🫘", "🫚", "🫛", "🍄", "🌰",
+]
+
+
+class TriviaAnswerButton(discord.ui.Button):
+    def __init__(self, marker: str, answer: str):
+        super().__init__(label=answer, emoji=marker, style=discord.ButtonStyle.secondary)
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message(
+            f"You chose: {self.label}", ephemeral=True
+        )
+
+
+class TriviaView(discord.ui.View):
+    def __init__(self, markers: list[str], answers: list[str]):
+        super().__init__(timeout=None)
+        for marker, answer in zip(markers, answers, strict=True):
+            self.add_item(TriviaAnswerButton(marker, answer))
+
 
 class Trivia(commands.Cog):
     trivia_group = app_commands.Group(
@@ -56,17 +80,15 @@ class Trivia(commands.Cog):
         answers = [correct_answer] + incorrect_answers
         random.shuffle(answers)
 
-        answer_markers = ["🍎", "🍑", "🍇", "🍉"]
-        answer_list = "\n".join(
-            f"{marker}  {answer}" for marker, answer in zip(answer_markers, answers, strict=True)
-        )
-        message = f"## {question}\n```\n{answer_list}\n```"
-        await interaction.response.send_message(message)
-        trivia_message = await interaction.original_response()
-        for marker in answer_markers:
-            await trivia_message.add_reaction(marker)
+        answer_markers = random.sample(PRODUCE_MARKERS, k=len(answers))
+        message = f"## {question}"
+        view = TriviaView(answer_markers, answers)
+        await interaction.response.send_message(message, view=view)
 
         await asyncio.sleep(15)
+        for button in view.children:
+            button.disabled = True
+        await interaction.edit_original_response(view=view)
         await interaction.followup.send(
             f"The correct answer was: {correct_answer}"
         )
