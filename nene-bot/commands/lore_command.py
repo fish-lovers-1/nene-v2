@@ -1,5 +1,4 @@
 import logging
-import resource
 from datetime import datetime
 from typing import assert_never
 
@@ -132,7 +131,7 @@ class LoreCommand(commands.Cog):
             case str():
                 await interaction.response.send_message(response)
             case _:
-                assert_never(resource)
+                assert_never(response)
 
     async def _get_response(
         self, member: discord.Member, lores: list[Lore]
