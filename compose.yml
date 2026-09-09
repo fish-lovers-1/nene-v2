@@ -2,9 +2,7 @@ name: nene
 
 services:
   nene:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/fish-lovers-1/nene-bot:${IMAGE_TAG}
 
     restart: unless-stopped
     env_file:

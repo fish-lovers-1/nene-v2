@@ -5,49 +5,87 @@ on:
     branches:
       - main
 
+  workflow_dispatch:
+
 jobs:
   test:
     uses: ./.github/workflows/test.yml
 
-
-  deploy:
+  build:
     needs: test
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-      - name: Checkout
+      - name: Checkout 
         uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Python
-        working-directory: nene-bot
-        run: uv python install
+      - name: build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/nene-bot:${{ github.sha }}
 
-      - name: Install dependencies
-        working-directory: nene-bot
-        run: uv sync --frozen
+  deploy:
+    runs-on: ubuntu-latest
 
-      - name: Run database migration
-        working-directory: nene-bot
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          uv run alembic upgrade head
+    needs: 
+      - test
+      - build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
       - name: Create env
         env:
-          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           GUILD_ID: ${{ secrets.GUILD_ID }}
 
         run: |
           cat > .env <<EOF
-          DISCORD_TOKEN=$DISCORD_TOKEN
+          CF_ACCESS_CLIENT_ID=$CF_ACCESS_CLIENT_ID
+          CF_ACCESS_CLIENT_SECRET=$CF_ACCESS_CLIENT_SECRET
+
           DATABASE_URL=$DATABASE_URL
+          DISCORD_TOKEN=$DISCORD_TOKEN
           GUILD_ID=$GUILD_ID
           EOF
 
-      - name: Deploy
-        run: docker compose up -d --build --remove-orphans
+      - name: deploy
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+          DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
+
+        run: |
+          curl --fail-with-body \
+          -X POST "$DEPLOY_URL" \
+          -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+          -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+          -H "Authorization: Bearer $DEPLOY_TOKEN" \
+          -F "env_file=@.env" \
+          -F "compose_file=@compose.yml" \
+          -F "image_tag=$GITHUB_SHA"
+
+
+      - name: Remove env
+        if: always()
+        run: rm -f .env
