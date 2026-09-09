@@ -6,9 +6,9 @@ import dotenv
 from discord import app_commands
 from discord.ext import commands
 
-from commands.Greet import Greet
-from commands.LoreCommand import LoreCommand
-from commands.Trivia import Trivia
+from commands.greet import Greet
+from commands.lore_command import LoreCommand
+from commands.trivia import Trivia
 from db.Database import Database
 from nene.utils import sync_users
 
@@ -46,12 +46,6 @@ class Nene(commands.Bot):
             [c.name for c in self.tree.get_commands(guild=self.guild)],
         )
         logger.info("about to sync commands")
-        synced = await self.tree.sync()
-        if len(synced) > 0:
-            logger.info(
-                "Synced application commands: %s",
-                ", ".join(c.name for c in synced),
-            )
 
     async def setup_hook(self):
         logger.info("Starting Nene")
