@@ -2,6 +2,10 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import html
+import aiohttp
+import asyncio
+
 
 class Trivia(commands.Cog):
     trivia_group = app_commands.Group(
@@ -20,6 +24,37 @@ class Trivia(commands.Cog):
         self,
         interaction: discord.Interaction,
     ):
-        question = "What is the capital of France?"
+        # See here for api details: https://opentdb.com/api_config.php
+        url = "https://opentdb.com/api.php?amount=1&type=multiple&difficulty=easy"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                data = await response.json()
+        if data["response_code"] != 0:
+            await interaction.response.send_message(
+                "Failed to retrieve a trivia question."
+            )
+            return
 
+        """
+        json format looks like this:
+        [
+            {
+                "type": str
+                "difficulty": str
+                "category": str
+                "question": str
+                "correct_answer": str
+                "incorrect_answers": [str]
+            }
+        ]
+        """
+        result = data["results"][0]
+        question = html.unescape(result["question"])
+        correct_answer = html.unescape(result["correct_answer"])
+        # incorrect_answers = [html.unescape(answer) for answer in result["incorrect_answers"]]
         await interaction.response.send_message(question)
+
+        await asyncio.sleep(15)
+        await interaction.followup.send(
+            f"The correct answer was: {correct_answer}"
+        )
