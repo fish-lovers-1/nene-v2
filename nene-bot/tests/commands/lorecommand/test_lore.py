@@ -6,7 +6,7 @@ import pytest
 from freezegun import freeze_time
 from sqlalchemy import select
 
-from commands.LoreCommand import LoreCommand
+from commands.lore_command import LoreCommand
 from db.Database import Database
 from db.models.Lore import Lore
 from nene.Nene import Nene

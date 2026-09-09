@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import discord
 import pytest
 
-from commands.Trivia import Trivia, TriviaAnswerButton, TriviaView
+from commands.trivia import Trivia, TriviaAnswerButton, TriviaView
 from nene.Nene import Nene
 
 TRIVIA_DATA = {
