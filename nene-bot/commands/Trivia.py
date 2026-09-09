@@ -6,6 +6,7 @@ import random
 import html
 import aiohttp
 import asyncio
+from typing import Literal
 
 FRUIT_MARKERS = [
     "🍇", "🍈", "🍉", "🍊", "🍋", "🍌", "🍍", "🥭", "🍎", "🍏",
@@ -102,13 +103,17 @@ class Trivia(commands.Cog):
         name="ask",
         description="Ask a trivia question"
     )
+    @app_commands.describe(difficulty="Choose a question difficulty")
     async def ask(
         self,
         interaction: discord.Interaction,
+        difficulty: Literal["any", "easy", "medium", "hard"] = "any",
     ):
         # See here for api details: https://opentdb.com/api_config.php
         # First fetch a potential question
-        url = "https://opentdb.com/api.php?amount=1&type=multiple&difficulty=easy"
+        url = "https://opentdb.com/api.php?amount=1&type=multiple"
+        if difficulty != "any":
+            url += f"&difficulty={difficulty}"
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 data = await response.json()

@@ -33,6 +33,9 @@ class Nene(commands.Bot):
         await self.add_cog(Trivia(self))
 
     async def _sync_app_commands(self):
+        self.tree.clear_commands(guild=self.guild)
+        await self.tree.sync(guild=self.guild)
+
         logger.info(
             "Global tree: %s",
             [c.name for c in self.tree.get_commands()],
@@ -43,7 +46,7 @@ class Nene(commands.Bot):
             [c.name for c in self.tree.get_commands(guild=self.guild)],
         )
         logger.info("about to sync commands")
-        synced = await self.tree.sync(guild=self.guild)
+        synced = await self.tree.sync()
         if len(synced) > 0:
             logger.info(
                 "Synced application commands: %s",
