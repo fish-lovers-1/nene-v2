@@ -2,7 +2,6 @@ import logging
 import os
 
 import discord
-import dotenv
 from discord import app_commands
 from discord.ext import commands
 
@@ -13,7 +12,6 @@ from db.Database import Database
 from nene.utils import sync_users
 
 logger = logging.getLogger(__name__)
-guild_id = dotenv.get_key(dotenv.find_dotenv(), "GUILD_ID")
 
 
 class Nene(commands.Bot):
@@ -33,9 +31,6 @@ class Nene(commands.Bot):
         await self.add_cog(Trivia(self))
 
     async def _sync_app_commands(self):
-        self.tree.clear_commands(guild=self.guild)
-        await self.tree.sync(guild=self.guild)
-
         logger.info(
             "Global tree: %s",
             [c.name for c in self.tree.get_commands()],
@@ -46,6 +41,13 @@ class Nene(commands.Bot):
             [c.name for c in self.tree.get_commands(guild=self.guild)],
         )
         logger.info("about to sync commands")
+        self.tree.copy_global_to(guild=self.guild)
+        synced = await self.tree.sync(guild=self.guild)
+        if len(synced) > 0:
+            logger.info(
+                "Synced application commands: %s",
+                ", ".join(c.name for c in synced),
+            )
 
     async def setup_hook(self):
         logger.info("Starting Nene")
