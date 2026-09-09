@@ -7,6 +7,7 @@ from discord.ext import commands
 
 from commands.Greet import Greet
 from commands.LoreCommand import LoreCommand
+from commands.Trivia import Trivia
 from db.Database import Database
 from nene.utils import sync_users
 
@@ -27,6 +28,7 @@ class Nene(commands.Bot):
     async def _add_commands(self):
         await self.add_cog(Greet(self))
         await self.add_cog(LoreCommand(self, self.db))
+        await self.add_cog(Trivia(self))
 
     async def _sync_app_commands(self):
         logger.info(
