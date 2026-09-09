@@ -2,6 +2,7 @@ import logging
 import os
 
 import discord
+import dotenv
 from discord import app_commands
 from discord.ext import commands
 
@@ -12,6 +13,7 @@ from db.Database import Database
 from nene.utils import sync_users
 
 logger = logging.getLogger(__name__)
+guild_id = dotenv.get_key(dotenv.find_dotenv(), "GUILD_ID")
 
 
 class Nene(commands.Bot):
