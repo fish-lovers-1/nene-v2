@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import random
 import html
 import aiohttp
 import asyncio
@@ -51,9 +52,12 @@ class Trivia(commands.Cog):
         result = data["results"][0]
         question = html.unescape(result["question"])
         correct_answer = html.unescape(result["correct_answer"])
-        # incorrect_answers = [html.unescape(answer) for answer in result["incorrect_answers"]]
-        await interaction.response.send_message(question)
+        incorrect_answers = [html.unescape(answer) for answer in result["incorrect_answers"]]
+        answers = [correct_answer] + incorrect_answers
+        random.shuffle(answers)
 
+        message = f"Question: {question}\n\t{'\n\t'.join([f"{i + 1}. {answer}" for i, answer in enumerate(answers)])}"
+        await interaction.response.send_message(message)
         await asyncio.sleep(15)
         await interaction.followup.send(
             f"The correct answer was: {correct_answer}"
