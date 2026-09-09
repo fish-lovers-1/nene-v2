@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 from db.Database import Database
 from nene.Nene import Nene
 
-
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 

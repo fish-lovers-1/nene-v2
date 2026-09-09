@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 import db.models  # noqa: F401
 from db.Base import Base
 
-
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 

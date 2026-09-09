@@ -1,24 +1,59 @@
+import asyncio
+import html
+import random
+from typing import Literal
+
+import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-import random
-import html
-import aiohttp
-import asyncio
-from typing import Literal
-
 FRUIT_MARKERS = [
-    "🍇", "🍈", "🍉", "🍊", "🍋", "🍌", "🍍", "🥭", "🍎", "🍏",
-    "🍐", "🍑", "🍒", "🍓", "🫐", "🥝", "🍅", "🫒", "🥥", "🥑",
-    "🍆", "🥔", "🥕", "🌽", "🌶️", "🫑", "🥒", "🥬", "🥦", "🧄",
-    "🧅", "🥜", "🫘", "🫚", "🫛", "🍄", "🌰",
+    "🍇",
+    "🍈",
+    "🍉",
+    "🍊",
+    "🍋",
+    "🍌",
+    "🍍",
+    "🥭",
+    "🍎",
+    "🍏",
+    "🍐",
+    "🍑",
+    "🍒",
+    "🍓",
+    "🫐",
+    "🥝",
+    "🍅",
+    "🫒",
+    "🥥",
+    "🥑",
+    "🍆",
+    "🥔",
+    "🥕",
+    "🌽",
+    "🌶️",
+    "🫑",
+    "🥒",
+    "🥬",
+    "🥦",
+    "🧄",
+    "🧅",
+    "🥜",
+    "🫘",
+    "🫚",
+    "🫛",
+    "🍄",
+    "🌰",
 ]
 
 
 class TriviaAnswerButton(discord.ui.Button):
     def __init__(self, marker: str, answer: str):
-        super().__init__(label=answer, emoji=marker, style=discord.ButtonStyle.secondary)
+        super().__init__(
+            label=answer, emoji=marker, style=discord.ButtonStyle.secondary
+        )
         self.marker = marker
         self.answer = answer
 
@@ -44,9 +79,7 @@ class TriviaAnswerButton(discord.ui.Button):
 
 
 class TriviaView(discord.ui.View):
-    def __init__(
-        self, markers: list[str], answers: list[str], correct_answer: str
-    ):
+    def __init__(self, markers: list[str], answers: list[str], correct_answer: str):
         super().__init__(timeout=None)
         self.correct_answer = correct_answer
         self.markers_by_answer = dict(zip(answers, markers, strict=True))
@@ -92,33 +125,31 @@ class TriviaView(discord.ui.View):
 
 class Trivia(commands.Cog):
     trivia_group = app_commands.Group(
-        name="trivia",
-        description="Perform trivia related commands"
+        name="trivia", description="Perform trivia related commands"
     )
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @trivia_group.command(
-        name="ask",
-        description="Ask a trivia question"
-    )
+    @trivia_group.command(name="ask", description="Ask a trivia question")
     @app_commands.describe(difficulty="Choose a question difficulty")
     @app_commands.describe(time="Choose the question time limit in seconds")
     async def ask(
         self,
         interaction: discord.Interaction,
         difficulty: Literal["any", "easy", "medium", "hard"] = "any",
-        time: int = 15
+        time: int = 15,
     ):
         # See here for api details: https://opentdb.com/api_config.php
         # First fetch a potential question
         url = "https://opentdb.com/api.php?amount=1&type=multiple"
         if difficulty != "any":
             url += f"&difficulty={difficulty}"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                data = await response.json()
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(url) as response,
+        ):
+            data = await response.json()
         if data["response_code"] != 0:
             await interaction.response.send_message(
                 "Failed to retrieve a trivia question."
@@ -142,7 +173,9 @@ class Trivia(commands.Cog):
         result = data["results"][0]
         question = html.unescape(result["question"])
         correct_answer = html.unescape(result["correct_answer"])
-        incorrect_answers = [html.unescape(answer) for answer in result["incorrect_answers"]]
+        incorrect_answers = [
+            html.unescape(answer) for answer in result["incorrect_answers"]
+        ]
         answers = [correct_answer] + incorrect_answers
         random.shuffle(answers)
 
