@@ -1,12 +1,13 @@
 import asyncio
-import html
 import random
 from typing import Literal
 
-import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import commands
+from returns.result import Failure
+
+from services.trivia_service import TriviaService
 
 FRUIT_MARKERS = [
     "🍇",
@@ -124,12 +125,15 @@ class TriviaView(discord.ui.View):
 
 
 class Trivia(commands.Cog):
-    trivia_group = app_commands.Group(
+    bot: commands.Bot
+    trivia_service: TriviaService
+    trivia_group: app_commands.Group = app_commands.Group(
         name="trivia", description="Perform trivia related commands"
     )
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot, trivia_service: TriviaService):
         self.bot = bot
+        self.trivia_service = trivia_service
 
     @trivia_group.command(name="ask", description="Ask a trivia question")
     @app_commands.describe(difficulty="Choose a question difficulty")
@@ -140,53 +144,22 @@ class Trivia(commands.Cog):
         difficulty: Literal["any", "easy", "medium", "hard"] = "any",
         time: int = 15,
     ):
-        # See here for api details: https://opentdb.com/api_config.php
-        # First fetch a potential question
-        url = "https://opentdb.com/api.php?amount=1&type=multiple"
-        if difficulty != "any":
-            url += f"&difficulty={difficulty}"
-        async with (
-            aiohttp.ClientSession() as session,
-            session.get(url) as response,
-        ):
-            data = await response.json()
-        if data["response_code"] != 0:
-            await interaction.response.send_message(
-                "Failed to retrieve a trivia question."
-            )
-            return
+        maybe_question = await self.trivia_service.get_question(difficulty=difficulty)
+        if isinstance(maybe_question, Failure):
+            return maybe_question
+        question = maybe_question.unwrap()  # this is awful... need to try do notation
 
-        """
-        json format looks like this:
-        [
-            {
-                "type": str
-                "difficulty": str
-                "category": str
-                "question": str
-                "correct_answer": str
-                "incorrect_answers": [str]
-            }
-        ]
-        """
-        # Then deconstruct the question and answers
-        result = data["results"][0]
-        question = html.unescape(result["question"])
-        correct_answer = html.unescape(result["correct_answer"])
-        incorrect_answers = [
-            html.unescape(answer) for answer in result["incorrect_answers"]
-        ]
-        answers = [correct_answer] + incorrect_answers
-        random.shuffle(answers)
+        all_answers = [question.correct_answer] + question.incorrect_answers
+        random.shuffle(all_answers)
 
         # Format the discord embed
-        answer_markers = random.sample(FRUIT_MARKERS, k=len(answers))
+        answer_markers = random.sample(FRUIT_MARKERS, k=len(all_answers))
         message = f"## {question}"
-        view = TriviaView(answer_markers, answers, correct_answer)
-        await interaction.response.send_message(message, view=view)
+        view = TriviaView(answer_markers, all_answers, question.correct_answer)
+        _ = await interaction.response.send_message(message, view=view)
 
         # Wait before revealing the answer
         await asyncio.sleep(time)
         view.reveal_answer()
-        await interaction.edit_original_response(view=view)
+        _ = await interaction.edit_original_response(view=view)
         await interaction.followup.send(view.get_results_message())

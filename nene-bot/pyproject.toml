@@ -9,7 +9,9 @@ dependencies = [
     "asyncpg>=0.31.0",
     "discord-py>=2.7.1",
     "dpytest>=0.7.0",
+    "pydantic>=2.13.5",
     "python-dotenv>=1.2.2",
+    "returns>=0.29.0",
     "sqlalchemy>=2.0.52",
 ]
 

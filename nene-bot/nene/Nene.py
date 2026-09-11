@@ -1,15 +1,18 @@
 import logging
 import os
 
+import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import commands
 
+from clients.opentdb import OpenTDBClient
 from commands.greet import Greet
 from commands.lore_command import LoreCommand
 from commands.trivia import Trivia
 from db.Database import Database
 from nene.utils import sync_users
+from services.trivia_service import TriviaService
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +29,13 @@ class Nene(commands.Bot):
         self.guild = discord.Object(GUILD_ID)
 
     async def _add_commands(self):
-        await self.add_cog(Greet(self))
-        await self.add_cog(LoreCommand(self, self.db))
-        await self.add_cog(Trivia(self))
+        async with aiohttp.ClientSession() as session:
+            open_tdb_client = OpenTDBClient(session)
+            trivia_service = TriviaService(open_tdb_client)
+
+            await self.add_cog(Greet(self))
+            await self.add_cog(LoreCommand(self, self.db))
+            await self.add_cog(Trivia(self, trivia_service))
 
     async def _sync_app_commands(self):
         logger.info(
