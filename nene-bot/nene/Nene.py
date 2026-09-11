@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import override
 
 import discord
 from discord import app_commands
@@ -72,3 +73,9 @@ class Nene(commands.Bot):
 
     async def nene_start(self):
         await self.start(self._token)
+
+    @override
+    async def on_message(self, message: discord.Message):
+        # handler
+        # pass function(message, self)
+        return await super().on_message(message)
