@@ -1,47 +1,28 @@
+from typing import Literal
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import discord
 import pytest
+from returns.result import Failure, Success
 
+from clients.opentdb import TriviaQuestion
 from commands.trivia import Trivia, TriviaAnswerButton, TriviaView
 from nene.Nene import Nene
+from services.trivia_service import TriviaService
 
-TRIVIA_DATA = {
-    "response_code": 0,
-    "results": [
-        {
-            "question": "What is the capital of Spain?",
-            "correct_answer": "Madrid",
-            "incorrect_answers": ["Barcelona", "Sevilla", "Toledo"],
-        }
-    ],
-}
+TRIVIA_QUESTION = TriviaQuestion(
+    category="Geography",
+    difficulty="medium",
+    question="What is the capital of Spain?",
+    correct_answer="Madrid",
+    incorrect_answers=["Barcelona", "Sevilla", "Toledo"],
+)
 
 
-class MockResponse:
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, *_):
-        return None
-
-    async def json(self):
-        return TRIVIA_DATA
-
-
-class MockSession:
-    def __init__(self):
-        self.url: str | None = None
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, *_):
-        return None
-
-    def get(self, url: str):
-        self.url = url
-        return MockResponse()
+def make_service(question: TriviaQuestion = TRIVIA_QUESTION) -> AsyncMock:
+    service = AsyncMock(spec=TriviaService)
+    service.get_question = AsyncMock(return_value=Success(question))
+    return service
 
 
 def make_interaction(user_id: int = 123) -> MagicMock:
@@ -68,9 +49,8 @@ def get_button(view: TriviaView, answer: str) -> TriviaAnswerButton:
 async def ask_question(
     cog: Trivia,
     interaction: MagicMock,
-    session: MockSession,
     *,
-    difficulty: str = "any",
+    difficulty: Literal["any", "easy", "medium", "hard"] = "any",
     time: int = 1,
     while_waiting=None,
 ) -> tuple[TriviaView, AsyncMock]:
@@ -80,13 +60,10 @@ async def ask_question(
             view = interaction.response.send_message.await_args.kwargs["view"]
             await while_waiting(view)
 
-    with (
-        patch("commands.trivia.aiohttp.ClientSession", return_value=session),
-        patch(
-            "commands.trivia.asyncio.sleep",
-            new=AsyncMock(side_effect=mock_sleep),
-        ) as sleep,
-    ):
+    with patch(
+        "commands.trivia.asyncio.sleep",
+        new=AsyncMock(side_effect=mock_sleep),
+    ) as sleep:
         await cog.ask.callback(
             cog,  # ty: ignore[invalid-argument-type]
             interaction,
@@ -101,11 +78,11 @@ async def ask_question(
 @pytest.mark.asyncio
 async def test_trivia_ask(test_nene: Nene):
     interaction = make_interaction()
-    session = MockSession()
+    service = make_service()
 
-    view, _ = await ask_question(Trivia(test_nene), interaction, session)
+    view, _ = await ask_question(Trivia(test_nene, service), interaction)
 
-    assert session.url == "https://opentdb.com/api.php?amount=1&type=multiple"
+    service.get_question.assert_awaited_once_with(difficulty="any")
     assert interaction.response.send_message.await_args.args[0] == (
         "## What is the capital of Spain?"
     )
@@ -115,31 +92,44 @@ async def test_trivia_ask(test_nene: Nene):
 @pytest.mark.asyncio
 async def test_trivia_ask_with_difficulty(test_nene: Nene):
     interaction = make_interaction()
-    session = MockSession()
+    service = make_service()
 
-    await ask_question(Trivia(test_nene), interaction, session, difficulty="hard")
+    await ask_question(Trivia(test_nene, service), interaction, difficulty="hard")
 
-    assert session.url == (
-        "https://opentdb.com/api.php?amount=1&type=multiple&difficulty=hard"
-    )
+    service.get_question.assert_awaited_once_with(difficulty="hard")
 
 
 @pytest.mark.asyncio
 async def test_trivia_ask_with_time(test_nene: Nene):
     interaction = make_interaction()
-    session = MockSession()
+    service = make_service()
 
-    _, sleep = await ask_question(Trivia(test_nene), interaction, session, time=1)
+    _, sleep = await ask_question(Trivia(test_nene, service), interaction, time=1)
 
     sleep.assert_awaited_once_with(1)
 
 
 @pytest.mark.asyncio
+async def test_trivia_ask_when_service_fails(test_nene: Nene):
+    interaction = make_interaction()
+    service = AsyncMock(spec=TriviaService)
+    service.get_question = AsyncMock(return_value=Failure("boom"))
+
+    result = await Trivia(test_nene, service).ask.callback(
+        Trivia(test_nene, service),  # ty: ignore[invalid-argument-type]
+        interaction,
+    )
+
+    assert isinstance(result, Failure)
+    interaction.response.send_message.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_trivia_ask_with_no_answers(test_nene: Nene):
     interaction = make_interaction()
-    session = MockSession()
+    service = make_service()
 
-    view, _ = await ask_question(Trivia(test_nene), interaction, session)
+    view, _ = await ask_question(Trivia(test_nene, service), interaction)
 
     assert view.revealed is True
     assert get_button(view, "Madrid").style is discord.ButtonStyle.success
@@ -149,14 +139,14 @@ async def test_trivia_ask_with_no_answers(test_nene: Nene):
 @pytest.mark.asyncio
 async def test_trivia_ask_with_correct_answer(test_nene: Nene):
     interaction = make_interaction()
-    session = MockSession()
+    service = make_service()
     button_interaction = make_interaction()
 
     async def answer_correctly(view: TriviaView):
         await get_button(view, "Madrid").callback(button_interaction)
 
     view, _ = await ask_question(
-        Trivia(test_nene), interaction, session, while_waiting=answer_correctly
+        Trivia(test_nene, service), interaction, while_waiting=answer_correctly
     )
 
     marker = view.markers_by_answer["Madrid"]
@@ -167,14 +157,14 @@ async def test_trivia_ask_with_correct_answer(test_nene: Nene):
 @pytest.mark.asyncio
 async def test_trivia_ask_with_incorrect_answer(test_nene: Nene):
     interaction = make_interaction()
-    session = MockSession()
+    service = make_service()
     button_interaction = make_interaction()
 
     async def answer_incorrectly(view: TriviaView):
         await get_button(view, "Barcelona").callback(button_interaction)
 
     view, _ = await ask_question(
-        Trivia(test_nene), interaction, session, while_waiting=answer_incorrectly
+        Trivia(test_nene, service), interaction, while_waiting=answer_incorrectly
     )
 
     marker = view.markers_by_answer["Barcelona"]
@@ -187,7 +177,7 @@ async def test_trivia_ask_with_incorrect_answer(test_nene: Nene):
 @pytest.mark.asyncio
 async def test_trivia_ask_when_answer_changes_from_wrong_to_right(test_nene: Nene):
     interaction = make_interaction()
-    session = MockSession()
+    service = make_service()
     button_interaction = make_interaction()
 
     async def switch_to_correct_answer(view: TriviaView):
@@ -195,7 +185,9 @@ async def test_trivia_ask_when_answer_changes_from_wrong_to_right(test_nene: Nen
         await get_button(view, "Madrid").callback(button_interaction)
 
     view, _ = await ask_question(
-        Trivia(test_nene), interaction, session, while_waiting=switch_to_correct_answer
+        Trivia(test_nene, service),
+        interaction,
+        while_waiting=switch_to_correct_answer,
     )
 
     marker = view.markers_by_answer["Madrid"]
@@ -206,7 +198,7 @@ async def test_trivia_ask_when_answer_changes_from_wrong_to_right(test_nene: Nen
 @pytest.mark.asyncio
 async def test_trivia_ask_when_answer_changes_from_right_to_wrong(test_nene: Nene):
     interaction = make_interaction()
-    session = MockSession()
+    service = make_service()
     button_interaction = make_interaction()
 
     async def switch_to_incorrect_answer(view: TriviaView):
@@ -214,9 +206,8 @@ async def test_trivia_ask_when_answer_changes_from_right_to_wrong(test_nene: Nen
         await get_button(view, "Barcelona").callback(button_interaction)
 
     view, _ = await ask_question(
-        Trivia(test_nene),
+        Trivia(test_nene, service),
         interaction,
-        session,
         while_waiting=switch_to_incorrect_answer,
     )
 
@@ -230,7 +221,7 @@ async def test_trivia_ask_when_answer_changes_from_right_to_wrong(test_nene: Nen
 @pytest.mark.asyncio
 async def test_trivia_ask_when_same_answer_is_clicked_multiple_times(test_nene: Nene):
     interaction = make_interaction()
-    session = MockSession()
+    service = make_service()
     button_interaction = make_interaction()
 
     async def click_same_answer_twice(view: TriviaView):
@@ -238,7 +229,7 @@ async def test_trivia_ask_when_same_answer_is_clicked_multiple_times(test_nene: 
         await get_button(view, "Madrid").callback(button_interaction)
 
     view, _ = await ask_question(
-        Trivia(test_nene), interaction, session, while_waiting=click_same_answer_twice
+        Trivia(test_nene, service), interaction, while_waiting=click_same_answer_twice
     )
 
     marker = view.markers_by_answer["Madrid"]
@@ -249,7 +240,7 @@ async def test_trivia_ask_when_same_answer_is_clicked_multiple_times(test_nene: 
 @pytest.mark.asyncio
 async def test_trivia_ask_when_many_buttons_are_clicked(test_nene: Nene):
     interaction = make_interaction()
-    session = MockSession()
+    service = make_service()
     button_interaction = make_interaction()
 
     async def click_every_answer(view: TriviaView):
@@ -258,7 +249,7 @@ async def test_trivia_ask_when_many_buttons_are_clicked(test_nene: Nene):
                 await button.callback(button_interaction)
 
     view, _ = await ask_question(
-        Trivia(test_nene), interaction, session, while_waiting=click_every_answer
+        Trivia(test_nene, service), interaction, while_waiting=click_every_answer
     )
 
     last_answer = next(
