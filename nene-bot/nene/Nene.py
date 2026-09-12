@@ -1,5 +1,6 @@
 import logging
 import os
+import traceback
 from typing import Any, override
 
 import aiohttp
@@ -41,16 +42,10 @@ class Nene(commands.Bot):
 
     async def _sync_app_commands(self):
         logger.info(
-            "Global tree: %s",
-            [c.name for c in self.tree.get_commands()],
-        )
-
-        logger.info(
             "Guild tree: %s",
             [c.name for c in self.tree.get_commands(guild=self.guild)],
         )
         logger.info("about to sync commands")
-        self.tree.copy_global_to(guild=self.guild)
         synced = await self.tree.sync(guild=self.guild)
         if len(synced) > 0:
             logger.info(
@@ -74,14 +69,28 @@ class Nene(commands.Bot):
     async def on_command_error(
         self, ctx: commands.Context[Any], error: commands.CommandError, /
     ) -> None:
-        await ctx.send(f"Error: {error}")
+        exc = (
+            error.original
+            if isinstance(error, discord.app_commands.CommandInvokeError)
+            else error
+        )
+
+        trace_back = traceback.format_exception(exc)
+        await ctx.send(f"Error: {''.join(trace_back)}")
 
     async def on_tree_error(
         self,
         interaction: discord.Interaction,
         error: app_commands.AppCommandError,
     ):
-        await interaction.response.send_message(f"Error: {error}")
+        exc = (
+            error.original
+            if isinstance(error, discord.app_commands.CommandInvokeError)
+            else error
+        )
+
+        trace_back = traceback.format_exception(exc)
+        await interaction.response.send_message(f"Error: {''.join(trace_back)}")
 
     async def nene_start(self):
         await self.start(self._token)

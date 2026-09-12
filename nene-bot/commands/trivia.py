@@ -5,7 +5,6 @@ from typing import Literal
 import discord
 from discord import app_commands
 from discord.ext import commands
-from returns.result import Failure
 
 from services.trivia_service import TriviaService
 
@@ -145,9 +144,7 @@ class Trivia(commands.Cog):
         time: int = 15,
     ):
         maybe_question = await self.trivia_service.get_question(difficulty=difficulty)
-        if isinstance(maybe_question, Failure):
-            return maybe_question
-        question = maybe_question.unwrap()  # this is awful... need to try do notation
+        question = maybe_question.unwrap()
 
         all_answers = [question.correct_answer] + question.incorrect_answers
         random.shuffle(all_answers)
