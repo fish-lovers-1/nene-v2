@@ -154,7 +154,7 @@ class Trivia(commands.Cog):
 
         # Format the discord embed
         answer_markers = random.sample(FRUIT_MARKERS, k=len(all_answers))
-        message = f"## {question}"
+        message = f"## {question.question}"
         view = TriviaView(answer_markers, all_answers, question.correct_answer)
         _ = await interaction.response.send_message(message, view=view)
 

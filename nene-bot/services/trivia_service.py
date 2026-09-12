@@ -25,4 +25,4 @@ class TriviaService:
                     amount=1, type="multiple", difficulty=difficulty
                 )
             )
-        ).bind(lambda x: _single(x))
+        ).bind(_single)
