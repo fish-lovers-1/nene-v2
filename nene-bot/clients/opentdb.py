@@ -13,6 +13,11 @@ class GetMultipleQuestionsRequest(BaseModel):
     type: Literal["multiple"]
     difficulty: str | None  # todo: this should be literal
 
+    @field_validator("difficulty", mode="after")
+    @classmethod
+    def ignore_any_difficulty(cls, value: str) -> str | None:
+        return None if value == "any" else value
+
 
 class GetMultipleQuestionsResponse(BaseModel):
     response_code: int
@@ -52,7 +57,7 @@ class OpenTDBClient:
         self, request: GetMultipleQuestionsRequest
     ) -> Result[list[TriviaQuestion], str]:
         async with self._session.get(
-            self.BASE_URL, params=request.model_dump()
+            self.BASE_URL, params=request.model_dump(exclude_none=True)
         ) as response:
             if response.status != 200:
                 return Failure(f"Received http response code {response.status}")

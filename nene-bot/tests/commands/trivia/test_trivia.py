@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import discord
 import pytest
+from returns.primitives.exceptions import UnwrapFailedError
 from returns.result import Failure, Success
 
 from clients.opentdb import TriviaQuestion
@@ -115,12 +116,12 @@ async def test_trivia_ask_when_service_fails(test_nene: Nene):
     service = AsyncMock(spec=TriviaService)
     service.get_question = AsyncMock(return_value=Failure("boom"))
 
-    result = await Trivia(test_nene, service).ask.callback(
-        Trivia(test_nene, service),  # ty: ignore[invalid-argument-type]
-        interaction,
-    )
+    with pytest.raises(UnwrapFailedError):
+        await Trivia(test_nene, service).ask.callback(
+            Trivia(test_nene, service),  # type: ignore
+            interaction,
+        )
 
-    assert isinstance(result, Failure)
     interaction.response.send_message.assert_not_called()
 
 
