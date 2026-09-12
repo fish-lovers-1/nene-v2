@@ -19,18 +19,29 @@ from services.trivia_service import TriviaService
 logger = logging.getLogger(__name__)
 
 
+def _get_intents():
+    intents = discord.Intents.default()
+    intents.message_content = True
+    intents.members = True
+
+    return intents
+
+
+def _get_guild_and_bot_channel_id():
+    return os.environ["GUILD_ID"], os.environ["BOT_CHANNEL_ID"]
+
+
 class Nene(commands.Bot):
     def __init__(self, discord_token: str, db: Database):
-        GUILD_ID = os.environ["GUILD_ID"]
-        self._bot_channel_id: Final[str] = os.environ["BOT_CHANNEL_ID"]
-        intents = discord.Intents.default()
-        intents.message_content = True
-        intents.members = True
-        super().__init__(intents=intents, command_prefix="Nene ")
         self._token = discord_token
         self.db = db
-        self.guild = discord.Object(GUILD_ID)
+
+        guild_id, bot_channel_id = _get_guild_and_bot_channel_id()
+        self._bot_channel_id: Final[str] = bot_channel_id
+        super().__init__(intents=_get_intents(), command_prefix="Nene ")
+        self.guild = discord.Object(guild_id)
         self._session: aiohttp.ClientSession | None = None
+
         self._bot_channel: TextChannel | None = None
 
     async def _add_commands(self):
@@ -92,7 +103,13 @@ class Nene(commands.Bot):
 
     async def on_ready(self):
         logger.info(f"Nene signed in as {self.user}")
-        await self.nene_says("Nene has been deployed successfully")
+        await self._startup_greet()
+
+    async def _startup_greet(self):
+        github_sha = os.environ["GITHUB_SHA"]
+        await self.nene_says(
+            f"Nene has been deployed successfully. \nDeployment snapshot: https://github.com/fish-lovers-1/nene-v2/tree/{github_sha}"
+        )
 
     @override
     async def on_command_error(
