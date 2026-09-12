@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Any, override
 
 import aiohttp
 import discord
@@ -27,15 +28,16 @@ class Nene(commands.Bot):
         self._token = discord_token
         self.db = db
         self.guild = discord.Object(GUILD_ID)
+        self._session: aiohttp.ClientSession | None = None
 
     async def _add_commands(self):
-        async with aiohttp.ClientSession() as session:
-            open_tdb_client = OpenTDBClient(session)
-            trivia_service = TriviaService(open_tdb_client)
+        self._session = aiohttp.ClientSession()
+        open_tdb_client = OpenTDBClient(self._session)
+        trivia_service = TriviaService(open_tdb_client)
 
-            await self.add_cog(Greet(self))
-            await self.add_cog(LoreCommand(self, self.db))
-            await self.add_cog(Trivia(self, trivia_service))
+        await self.add_cog(Greet(self))
+        await self.add_cog(LoreCommand(self, self.db))
+        await self.add_cog(Trivia(self, trivia_service))
 
     async def _sync_app_commands(self):
         logger.info(
@@ -56,6 +58,7 @@ class Nene(commands.Bot):
                 ", ".join(c.name for c in synced),
             )
 
+    @override
     async def setup_hook(self):
         logger.info("Starting Nene")
         self.tree.on_error = self.on_tree_error  # type: ignore
@@ -67,7 +70,10 @@ class Nene(commands.Bot):
     async def on_ready(self):
         logger.info(f"Nene signed in as {self.user}")
 
-    async def on_command_error(self, ctx: commands.Context, error: Exception):
+    @override
+    async def on_command_error(
+        self, ctx: commands.Context[Any], error: commands.CommandError, /
+    ) -> None:
         await ctx.send(f"Error: {error}")
 
     async def on_tree_error(
@@ -79,3 +85,9 @@ class Nene(commands.Bot):
 
     async def nene_start(self):
         await self.start(self._token)
+
+    @override
+    async def close(self) -> None:
+        if self._session is not None and not self._session.closed:
+            await self._session.close()
+        await super().close()
