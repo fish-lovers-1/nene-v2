@@ -1,11 +1,11 @@
 import logging
 import os
 import traceback
-from typing import Any, override
+from typing import Any, Final, override
 
 import aiohttp
 import discord
-from discord import app_commands
+from discord import TextChannel, app_commands
 from discord.ext import commands
 
 from clients.opentdb import OpenTDBClient
@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 class Nene(commands.Bot):
     def __init__(self, discord_token: str, db: Database):
         GUILD_ID = os.environ["GUILD_ID"]
+        self._bot_channel_id: Final[str] = os.environ["BOT_CHANNEL_ID"]
         intents = discord.Intents.default()
         intents.message_content = True
         intents.members = True
@@ -30,6 +31,7 @@ class Nene(commands.Bot):
         self.db = db
         self.guild = discord.Object(GUILD_ID)
         self._session: aiohttp.ClientSession | None = None
+        self._bot_channel: TextChannel | None = None
 
     async def _add_commands(self):
         self._session = aiohttp.ClientSession()
@@ -54,6 +56,30 @@ class Nene(commands.Bot):
                 ", ".join(c.name for c in synced),
             )
 
+    async def _fetch_bot_channel(self):
+        if self._bot_channel is not None:
+            return self._bot_channel
+
+        try:
+            channel = await self.fetch_channel(int(self._bot_channel_id))
+
+            if not isinstance(channel, TextChannel):
+                raise TypeError(f"Expect a text channel, got {channel}")
+        except Exception as e:
+            logger.warning(f"Cannot fetch bot channel due to {e}")
+            return
+
+        self._bot_channel = channel
+        return channel
+
+    async def nene_says(self, message: str):
+        channel = await self._fetch_bot_channel()
+
+        if channel is None:
+            return
+
+        await channel.send(message)
+
     @override
     async def setup_hook(self):
         logger.info("Starting Nene")
@@ -61,10 +87,12 @@ class Nene(commands.Bot):
         await self._add_commands()
         await self._sync_app_commands()
         await sync_users(self.db, self.fetch_guilds())
+
         logger.info("Nene started")
 
     async def on_ready(self):
         logger.info(f"Nene signed in as {self.user}")
+        await self.nene_says("Nene has been deployed successfully")
 
     @override
     async def on_command_error(

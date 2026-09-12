@@ -51,21 +51,17 @@ jobs:
 
       - name: Create env
         env:
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           GUILD_ID: ${{ secrets.GUILD_ID }}
+          BOT_CHANNEL_ID: ${{ secrets.BOT_CHANNEL_ID }}
 
         run: |
           cat > .env <<EOF
-          CF_ACCESS_CLIENT_ID=$CF_ACCESS_CLIENT_ID
-          CF_ACCESS_CLIENT_SECRET=$CF_ACCESS_CLIENT_SECRET
-
           DATABASE_URL=$DATABASE_URL
           DISCORD_TOKEN=$DISCORD_TOKEN
           GUILD_ID=$GUILD_ID
+          BOT_CHANNEL_ID=$BOT_CHANNEL_ID
           EOF
 
       - name: deploy

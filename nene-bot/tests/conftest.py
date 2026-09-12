@@ -12,12 +12,13 @@ from nene.Nene import Nene
 @pytest.fixture(autouse=True)
 def test_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("GUILD_ID", "123456")
+    monkeypatch.setenv("BOT_CHANNEL_ID", "123456")
 
 
 @pytest_asyncio.fixture
 async def db() -> AsyncIterator[Database]:
+    db = Database("sqlite+aiosqlite:///:memory:")
     try:
-        db = Database("sqlite+aiosqlite:///:memory:")
         await db.init()
         async with db.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
