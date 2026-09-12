@@ -46,6 +46,7 @@ class Nene(commands.Bot):
             [c.name for c in self.tree.get_commands(guild=self.guild)],
         )
         logger.info("about to sync commands")
+        self.tree.copy_global_to(guild=self.guild)
         synced = await self.tree.sync(guild=self.guild)
         if len(synced) > 0:
             logger.info(
