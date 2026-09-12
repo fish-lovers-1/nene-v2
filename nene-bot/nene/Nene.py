@@ -58,7 +58,7 @@ class Nene(commands.Bot):
 
     async def setup_hook(self):
         logger.info("Starting Nene")
-        self.tree.on_error = self.on_tree_error  # ty: ignore[invalid-assignment]
+        self.tree.on_error = self.on_tree_error  # type: ignore
         await self._add_commands()
         await self._sync_app_commands()
         await sync_users(self.db, self.fetch_guilds())
