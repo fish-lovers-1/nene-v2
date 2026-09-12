@@ -1,7 +1,7 @@
 import logging
 import os
 import traceback
-from typing import Any, override
+from typing import Any, Final, override
 
 import aiohttp
 import discord
@@ -18,12 +18,11 @@ from services.trivia_service import TriviaService
 
 logger = logging.getLogger(__name__)
 
-GUILD_ID = os.environ["GUILD_ID"]
-BOT_CHANNEL_ID = os.environ["BOT_CHANNEL_ID"]
-
 
 class Nene(commands.Bot):
     def __init__(self, discord_token: str, db: Database):
+        GUILD_ID = os.environ["GUILD_ID"]
+        self._bot_channel_id: Final[str] = os.environ["BOT_CHANNEL_ID"]
         intents = discord.Intents.default()
         intents.message_content = True
         intents.members = True
@@ -62,7 +61,7 @@ class Nene(commands.Bot):
             return self._bot_channel
 
         try:
-            channel = await self.fetch_channel(int(BOT_CHANNEL_ID))
+            channel = await self.fetch_channel(int(self._bot_channel_id))
 
             if not isinstance(channel, TextChannel):
                 raise TypeError(f"Expect a text channel, got {channel}")
