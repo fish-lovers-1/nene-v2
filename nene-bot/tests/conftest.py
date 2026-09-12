@@ -13,6 +13,7 @@ from nene.Nene import Nene
 def test_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("GUILD_ID", "123456")
     monkeypatch.setenv("BOT_CHANNEL_ID", "123456")
+    monkeypatch.setenv("GITHUB_SHA", "123456")
 
 
 @pytest_asyncio.fixture
