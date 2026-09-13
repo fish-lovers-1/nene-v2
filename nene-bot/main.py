@@ -10,8 +10,7 @@ from config import ConfigProvider, EnvConfig
 from db.Database import Database
 from db.provider import DbProvider
 from nene.Nene import Nene
-from services.provider import ServiceProvider
-from services.trivia_service import TriviaService
+from services.provider import ServiceProvider, Services
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -34,12 +33,12 @@ async def main():
     try:
         env = await container.get(EnvConfig)
         db = await container.get(Database)
-        trivia_service = await container.get(TriviaService)
+        services = await container.get(Services)
 
         nene = Nene(
             env=env,
             db=db,
-            trivia_service=trivia_service,
+            services=services,
         )
         await nene.nene_start()
     finally:

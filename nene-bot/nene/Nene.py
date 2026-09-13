@@ -12,7 +12,7 @@ from commands.trivia import Trivia
 from config import EnvConfig
 from db.Database import Database
 from nene.utils import sync_users
-from services.trivia_service import TriviaService
+from services.provider import Services
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +26,11 @@ def _get_intents():
 
 
 class Nene(commands.Bot):
-    def __init__(self, env: EnvConfig, db: Database, trivia_service: TriviaService):
+    def __init__(self, env: EnvConfig, db: Database, services: Services):
         self._env = env
         self._token = env.DISCORD_TOKEN
         self.db = db
-        self._trivia_service = trivia_service
+        self._services = services
 
         self._bot_channel_id: Final[int] = env.BOT_CHANNEL_ID
         super().__init__(intents=_get_intents(), command_prefix="Nene ")
@@ -41,7 +41,7 @@ class Nene(commands.Bot):
     async def _add_commands(self):
         await self.add_cog(Greet(self))
         await self.add_cog(LoreCommand(self, self.db))
-        await self.add_cog(Trivia(self, self._trivia_service))
+        await self.add_cog(Trivia(self, self._services.trivia_service))
 
     async def _sync_app_commands(self):
         logger.info(

@@ -9,6 +9,7 @@ from config import EnvConfig
 from db.Base import Base
 from db.Database import Database
 from nene.Nene import Nene
+from services.provider import Services
 from services.trivia_service import TriviaService
 
 
@@ -39,7 +40,7 @@ async def test_nene(db: Database) -> AsyncIterator[Nene]:
     nene = Nene(
         env=EnvConfig.model_validate({}),
         db=db,
-        trivia_service=AsyncMock(spec=TriviaService),
+        services=Services(trivia_service=AsyncMock(spec=TriviaService)),
     )
     await nene._async_setup_hook()
     await nene._add_commands()
