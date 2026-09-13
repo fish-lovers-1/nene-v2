@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
-from dishka import Provider, Scope, provide
+from dishka import Scope
 
+from services.registry import service_provider
 from services.trivia_service import TriviaService
 
 
@@ -9,16 +10,10 @@ from services.trivia_service import TriviaService
 class Services:
     """Everything the bot needs, in one stable object.
 
-    New services are one field here (+ one provide() line below).
+    To add a service: put @service on the class, then add a field here.
     """
 
     trivia_service: TriviaService
 
 
-class ServiceProvider(Provider):
-    scope = Scope.APP
-
-    # Auto-wired via __init__ hints. New services are one line here,
-    # no new provider files needed.
-    trivia_service = provide(TriviaService)
-    services = provide(Services)
+service_provider.provide(Services, scope=Scope.APP)

@@ -5,12 +5,14 @@ import sys
 import discord
 from dishka import make_async_container
 
-from clients.provider import ClientProvider, HttpProvider
+from clients.provider import HttpProvider
+from clients.registry import client_provider
 from config import ConfigProvider, EnvConfig
 from db.Database import Database
 from db.provider import DbProvider
 from nene.Nene import Nene
-from services.provider import ServiceProvider, Services
+from services.provider import Services
+from services.registry import service_provider
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -27,8 +29,8 @@ async def main():
         ConfigProvider(),
         DbProvider(),
         HttpProvider(),
-        ClientProvider(),
-        ServiceProvider(),
+        client_provider,
+        service_provider,
     )
     try:
         env = await container.get(EnvConfig)
