@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from typing import Protocol
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
@@ -8,6 +9,12 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+
+
+class SessionFactory(Protocol):
+    """Narrow interface commands depend on: mint short-lived sessions."""
+
+    def session(self) -> AbstractAsyncContextManager[AsyncSession]: ...
 
 
 class Database:

@@ -1,17 +1,15 @@
 import logging
-import os
 import traceback
 from typing import Any, Final, override
 
-import aiohttp
 import discord
 from discord import TextChannel, app_commands
 from discord.ext import commands
 
-from clients.opentdb import OpenTDBClient
 from commands.greet import Greet
 from commands.lore_command import LoreCommand
 from commands.trivia import Trivia
+from config import EnvConfig
 from db.Database import Database
 from nene.utils import sync_users
 from services.trivia_service import TriviaService
@@ -27,31 +25,23 @@ def _get_intents():
     return intents
 
 
-def _get_guild_and_bot_channel_id():
-    return os.environ["GUILD_ID"], os.environ["BOT_CHANNEL_ID"]
-
-
 class Nene(commands.Bot):
-    def __init__(self, discord_token: str, db: Database):
-        self._token = discord_token
+    def __init__(self, env: EnvConfig, db: Database, trivia_service: TriviaService):
+        self._env = env
+        self._token = env.DISCORD_TOKEN
         self.db = db
+        self._trivia_service = trivia_service
 
-        guild_id, bot_channel_id = _get_guild_and_bot_channel_id()
-        self._bot_channel_id: Final[str] = bot_channel_id
+        self._bot_channel_id: Final[int] = env.BOT_CHANNEL_ID
         super().__init__(intents=_get_intents(), command_prefix="Nene ")
-        self.guild = discord.Object(guild_id)
-        self._session: aiohttp.ClientSession | None = None
+        self.guild = discord.Object(env.GUILD_ID)
 
         self._bot_channel: TextChannel | None = None
 
     async def _add_commands(self):
-        self._session = aiohttp.ClientSession()
-        open_tdb_client = OpenTDBClient(self._session)
-        trivia_service = TriviaService(open_tdb_client)
-
         await self.add_cog(Greet(self))
         await self.add_cog(LoreCommand(self, self.db))
-        await self.add_cog(Trivia(self, trivia_service))
+        await self.add_cog(Trivia(self, self._trivia_service))
 
     async def _sync_app_commands(self):
         logger.info(
@@ -72,7 +62,7 @@ class Nene(commands.Bot):
             return self._bot_channel
 
         try:
-            channel = await self.fetch_channel(int(self._bot_channel_id))
+            channel = await self.fetch_channel(self._bot_channel_id)
 
             if not isinstance(channel, TextChannel):
                 raise TypeError(f"Expect a text channel, got {channel}")
@@ -106,7 +96,10 @@ class Nene(commands.Bot):
         await self._startup_greet()
 
     async def _startup_greet(self):
-        github_sha = os.environ["GITHUB_SHA"]
+        if self._env.ENVIRONMENT == "dev":
+            return
+
+        github_sha = self._env.GITHUB_SHA
         await self.nene_says(
             f"Nene has been deployed successfully. \nDeployment snapshot: https://github.com/fish-lovers-1/nene-v2/tree/{github_sha}"
         )
@@ -140,9 +133,3 @@ class Nene(commands.Bot):
 
     async def nene_start(self):
         await self.start(self._token)
-
-    @override
-    async def close(self) -> None:
-        if self._session is not None and not self._session.closed:
-            await self._session.close()
-        await super().close()

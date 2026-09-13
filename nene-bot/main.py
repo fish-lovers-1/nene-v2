@@ -1,13 +1,17 @@
 import asyncio
 import logging
-import os
 import sys
 
 import discord
-from dotenv import load_dotenv
+from dishka import make_async_container
 
+from clients.provider import ClientProvider, HttpProvider
+from config import ConfigProvider, EnvConfig
 from db.Database import Database
+from db.provider import DbProvider
 from nene.Nene import Nene
+from services.provider import ServiceProvider
+from services.trivia_service import TriviaService
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -17,17 +21,29 @@ discord.utils.setup_logging(
     root=True,
 )
 logging.getLogger("discord").setLevel(logging.WARNING)
-load_dotenv()
 
 
 async def main():
-    database_url = os.environ["DATABASE_URL"]
-    db = Database(database_url)
-    await db.init()
+    container = make_async_container(
+        ConfigProvider(),
+        DbProvider(),
+        HttpProvider(),
+        ClientProvider(),
+        ServiceProvider(),
+    )
+    try:
+        env = await container.get(EnvConfig)
+        db = await container.get(Database)
+        trivia_service = await container.get(TriviaService)
 
-    token = os.environ["DISCORD_TOKEN"]
-    nene = Nene(discord_token=token, db=db)
-    await nene.nene_start()
+        nene = Nene(
+            env=env,
+            db=db,
+            trivia_service=trivia_service,
+        )
+        await nene.nene_start()
+    finally:
+        await container.close()
 
 
 if __name__ == "__main__":
