@@ -5,6 +5,7 @@ from typing import Any, Final, override
 import discord
 from discord import TextChannel, app_commands
 from discord.ext import commands
+from dishka import AsyncContainer
 
 from commands.greet import Greet
 from commands.lore_command import LoreCommand
@@ -12,7 +13,7 @@ from commands.trivia import Trivia
 from config import EnvConfig
 from db.Database import Database
 from nene.utils import sync_users
-from services.provider import Services
+from services.trivia_service import TriviaService
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +27,11 @@ def _get_intents():
 
 
 class Nene(commands.Bot):
-    def __init__(self, env: EnvConfig, db: Database, services: Services):
+    def __init__(self, env: EnvConfig, db: Database, container: AsyncContainer):
         self._env = env
         self._token = env.DISCORD_TOKEN
         self.db = db
-        self._services = services
+        self._container = container
 
         self._bot_channel_id: Final[int] = env.BOT_CHANNEL_ID
         super().__init__(intents=_get_intents(), command_prefix="Nene ")
@@ -39,9 +40,11 @@ class Nene(commands.Bot):
         self._bot_channel: TextChannel | None = None
 
     async def _add_commands(self):
+        trivia_service = await self._container.get(TriviaService)
+
         await self.add_cog(Greet(self))
         await self.add_cog(LoreCommand(self, self.db))
-        await self.add_cog(Trivia(self, self._services.trivia_service))
+        await self.add_cog(Trivia(self, trivia_service))
 
     async def _sync_app_commands(self):
         logger.info(

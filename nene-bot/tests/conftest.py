@@ -1,16 +1,18 @@
 from collections.abc import AsyncIterator
-from unittest.mock import AsyncMock
 
 import discord.ext.test as dpytest
 import pytest
 import pytest_asyncio
+from dishka import AsyncContainer, make_async_container
 
-from config import EnvConfig
+from clients.provider import HttpProvider
+from clients.registry import client_provider
+from config import ConfigProvider, EnvConfig
 from db.Base import Base
 from db.Database import Database
+from db.provider import DbProvider
 from nene.Nene import Nene
-from services.provider import Services
-from services.trivia_service import TriviaService
+from services.registry import service_provider
 
 
 @pytest.fixture(autouse=True)
@@ -23,24 +25,35 @@ def test_env(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest_asyncio.fixture
-async def db() -> AsyncIterator[Database]:
-    db = Database("sqlite+aiosqlite:///:memory:")
+async def container() -> AsyncIterator[AsyncContainer]:
+    container = make_async_container(
+        ConfigProvider(),
+        DbProvider(),
+        HttpProvider(),
+        client_provider,
+        service_provider,
+    )
     try:
-        await db.init()
-        async with db.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
-        yield db
+        yield container
     finally:
-        await db.close()
+        await container.close()
 
 
 @pytest_asyncio.fixture
-async def test_nene(db: Database) -> AsyncIterator[Nene]:
+async def db(container: AsyncContainer) -> AsyncIterator[Database]:
+    db = await container.get(Database)
+    async with db.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    yield db
+
+
+@pytest_asyncio.fixture
+async def test_nene(container: AsyncContainer, db: Database) -> AsyncIterator[Nene]:
     nene = Nene(
-        env=EnvConfig.model_validate({}),
+        env=await container.get(EnvConfig),
         db=db,
-        services=Services(trivia_service=AsyncMock(spec=TriviaService)),
+        container=container,
     )
     await nene._async_setup_hook()
     await nene._add_commands()

@@ -11,7 +11,6 @@ from config import ConfigProvider, EnvConfig
 from db.Database import Database
 from db.provider import DbProvider
 from nene.Nene import Nene
-from services.provider import Services
 from services.registry import service_provider
 
 if sys.platform == "win32":
@@ -35,12 +34,11 @@ async def main():
     try:
         env = await container.get(EnvConfig)
         db = await container.get(Database)
-        services = await container.get(Services)
 
         nene = Nene(
             env=env,
             db=db,
-            services=services,
+            container=container,
         )
         await nene.nene_start()
     finally:
