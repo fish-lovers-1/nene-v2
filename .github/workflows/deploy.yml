@@ -64,6 +64,7 @@ jobs:
           GUILD_ID=$GUILD_ID
           BOT_CHANNEL_ID=$BOT_CHANNEL_ID
           GITHUB_SHA=$GITHUB_SHA
+          ENVIRONMENT=prod
           EOF
 
       - name: deploy

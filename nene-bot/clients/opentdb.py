@@ -7,6 +7,8 @@ import aiohttp
 from pydantic import BaseModel, field_validator
 from returns.result import Failure, Result, Success
 
+from clients.registry import client
+
 
 class GetMultipleQuestionsRequest(BaseModel):
     amount: int
@@ -42,6 +44,7 @@ class TriviaQuestion(BaseModel):
         return [html.unescape(ans) for ans in value]
 
 
+@client
 class OpenTDBClient:
     """
     https://opentdb.com/api_config.php

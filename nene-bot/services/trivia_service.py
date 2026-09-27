@@ -3,6 +3,7 @@ from __future__ import annotations
 from returns.result import Failure, Result, Success
 
 from clients.opentdb import GetMultipleQuestionsRequest, OpenTDBClient, TriviaQuestion
+from services.registry import service
 
 
 def _single[T](xs: list[T]) -> Result[T, str]:
@@ -12,6 +13,7 @@ def _single[T](xs: list[T]) -> Result[T, str]:
         return Failure(f"Expected list of size 1, but was {len(xs)}")
 
 
+@service
 class TriviaService:
     opentdb_client: OpenTDBClient
 

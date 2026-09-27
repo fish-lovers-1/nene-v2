@@ -11,7 +11,7 @@ from sqlalchemy import select
 from argparsers.DateTimeTransformer import DateTimeTransformer
 from commands.utils import ensure_utc
 from constants import EMBEDS_MAX_DESC_LENGTH
-from db.Database import Database
+from db.Database import SessionFactory
 from db.models.Lore import Lore
 from db.models.User import User
 
@@ -24,9 +24,9 @@ class LoreCommand(commands.Cog):
         description="Add more spicy lore to the beloved members in the server.",
     )
 
-    def __init__(self, nene: commands.Bot, db: Database):
+    def __init__(self, nene: commands.Bot, session_factory: SessionFactory):
         self.nene = nene
-        self.db = db
+        self.session_factory = session_factory
 
     @lore.command(description="Add lore to a member")
     @app_commands.describe(
@@ -41,7 +41,7 @@ class LoreCommand(commands.Cog):
         lore: app_commands.Range[str, 1, 1000],
         timestamp: app_commands.Transform[datetime, DateTimeTransformer] | None = None,
     ):
-        async with self.db.session() as session:
+        async with self.session_factory.session() as session:
             session.add(
                 Lore(
                     adder_dicord_ref=str(interaction.user.id),
@@ -58,7 +58,7 @@ class LoreCommand(commands.Cog):
     async def remove(self, interaction: discord.Interaction, lore_id: int):
         deleter_ref = str(interaction.user.id)
 
-        async with self.db.session() as session:
+        async with self.session_factory.session() as session:
             lore = (
                 await session.execute(select(Lore).where(Lore.id == lore_id))
             ).scalar_one_or_none()
@@ -93,7 +93,7 @@ class LoreCommand(commands.Cog):
         member: discord.Member,
         cursor: str | None = None,
     ):
-        async with self.db.session() as session:
+        async with self.session_factory.session() as session:
             cursor_row = (
                 (
                     await session.execute(select(Lore).where(Lore.id == cursor))
@@ -120,7 +120,7 @@ class LoreCommand(commands.Cog):
             )
         )
 
-        async with self.db.session() as session:
+        async with self.session_factory.session() as session:
             lores = list((await session.execute(final_query)).scalars().all())
 
         response = await self._get_response(member=member, lores=lores)
@@ -139,7 +139,7 @@ class LoreCommand(commands.Cog):
         if len(lores) == 0:
             return "Look at this person with no lore LOL"
 
-        async with self.db.session() as session:
+        async with self.session_factory.session() as session:
             user_lookup_table = await User.get_lookup_table(session)
 
         entries: list[str] = []

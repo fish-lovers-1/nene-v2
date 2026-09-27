@@ -30,7 +30,7 @@ def make_interaction(user_id: int = 123) -> MagicMock:
 @freeze_time("2026-03-10 11:11:11")
 async def test_lore_add(test_nene: Nene):
     db = test_nene.db
-    lore_cog = LoreCommand(nene=test_nene, db=db)
+    lore_cog = LoreCommand(nene=test_nene, session_factory=db)
     interaction = make_interaction()
     member = make_member(456)
     interaction.response.send_message = AsyncMock()
@@ -59,7 +59,7 @@ async def test_lore_add(test_nene: Nene):
 @pytest.mark.asyncio
 async def test_lore_add_with_timestamp(test_nene: Nene):
     db = test_nene.db
-    lore_cog = LoreCommand(nene=test_nene, db=db)
+    lore_cog = LoreCommand(nene=test_nene, session_factory=db)
     interaction = make_interaction()
     member = make_member(456)
 
@@ -96,7 +96,7 @@ async def test_lore_remove(
     test_nene: Nene, adder_id, referenced_id, remover_id, should_delete: bool
 ):
     db = test_nene.db
-    lore_cog = LoreCommand(nene=test_nene, db=db)
+    lore_cog = LoreCommand(nene=test_nene, session_factory=db)
 
     async with db.session() as session:
         lore = Lore(
