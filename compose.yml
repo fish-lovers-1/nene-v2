@@ -1,5 +1,8 @@
 name: nene
 
+volumes:
+  nene-logs:
+
 services:
   nene:
     image: ghcr.io/fish-lovers-1/nene-bot:${IMAGE_TAG}
@@ -9,6 +12,9 @@ services:
       - .env
     networks:
       - shared
+
+    volumes:
+      - nene-logs:/app/logs
 
 networks:
   shared:
