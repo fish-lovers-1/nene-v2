@@ -6,12 +6,14 @@ import discord
 from discord import TextChannel, app_commands
 from discord.ext import commands
 from dishka import AsyncContainer
+from sqlalchemy import select
 
 from commands.greet import Greet
 from commands.lore_command import LoreCommand
 from commands.trivia import Trivia
 from config import EnvConfig
 from db.Database import Database
+from db.models.DeploymentInfo import DeploymentInfo
 from nene.utils import sync_users
 from services.trivia_service import TriviaService
 
@@ -103,9 +105,35 @@ class Nene(commands.Bot):
             return
 
         github_sha = self._env.GITHUB_SHA
+
+        is_new_deploy = await self._record_deployment(github_sha)
+        if not is_new_deploy:
+            return
+
         await self.nene_says(
             f"Nene has been deployed successfully. \nDeployment snapshot: https://github.com/fish-lovers-1/nene-v2/tree/{github_sha}"
         )
+
+    async def _record_deployment(self, github_sha: str) -> bool:
+        async with self.db.session() as session:
+            latest = (
+                (
+                    await session.scalars(
+                        select(DeploymentInfo)
+                        .order_by(DeploymentInfo.id.desc())
+                        .limit(1)
+                    )
+                )
+                .unique()
+                .one_or_none()
+            )
+
+            if latest is not None and latest.sha == github_sha:
+                return False
+
+            session.add(DeploymentInfo(sha=github_sha))
+
+        return True
 
     @override
     async def on_command_error(
